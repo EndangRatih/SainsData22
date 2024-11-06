@@ -1,0 +1,217 @@
+Arsitektur yang digunakan pada program di atas adalah **Convolutional Neural Network (CNN)**,
+yang merupakan model jaringan saraf dalam yang sangat efektif untuk tugas-tugas pemrosesan citra.
+Berikut adalah penjelasan lebih rinci tentang arsitektur yang digunakan dalam program tersebut:
+
+1. **Lapisan Konvolusi (Convolutional Layers)**
+   - **Lapisan Konvolusi 1 (Conv2D)**:  
+     Lapisan pertama menggunakan 32 filter (atau kernel) dengan ukuran 3x3. Fungsi aktivasi yang digunakan adalah **ReLU (Rectified Linear Unit)**, yang memungkinkan model menangkap fitur penting dari gambar seperti tepi, tekstur, dan pola sederhana.  
+     - **Jumlah filter**: 32  
+     - **Ukuran kernel**: (3, 3)  
+     - **Fungsi aktivasi**: ReLU  
+     - **Input shape**: (32, 32, 3) — gambar dengan dimensi 32x32 piksel dan 3 saluran warna (RGB).
+   
+   - **Lapisan Max Pooling 1 (MaxPooling2D)**:  
+     Setelah lapisan konvolusi pertama, kita menggunakan lapisan **MaxPooling2D** dengan ukuran pool 2x2. Lapisan ini mengurangi ukuran dimensi spasial dari output lapisan konvolusi (mengurangi lebar dan tinggi) untuk mengekstrak fitur utama sambil mengurangi jumlah parameter.
+   
+   - **Lapisan Konvolusi 2 (Conv2D)**:  
+     Lapisan kedua menggunakan 64 filter dengan ukuran kernel yang sama (3x3) dan fungsi aktivasi ReLU. Lapisan ini mengekstraksi fitur yang lebih kompleks.
+     - **Jumlah filter**: 64  
+     - **Ukuran kernel**: (3, 3)  
+     - **Fungsi aktivasi**: ReLU
+   
+   - **Lapisan Max Pooling 2 (MaxPooling2D)**:  
+     Sama seperti lapisan pooling pertama, lapisan ini juga menggunakan pool 2x2 untuk mengurangi dimensi spasial.
+   
+   - **Lapisan Konvolusi 3 (Conv2D)**:  
+     Lapisan ketiga juga menggunakan 64 filter dengan ukuran kernel (3x3) dan ReLU sebagai fungsi aktivasi. Lapisan ini menangkap fitur yang lebih kompleks lagi.
+     - **Jumlah filter**: 64  
+     - **Ukuran kernel**: (3, 3)  
+     - **Fungsi aktivasi**: ReLU
+
+2. **Lapisan Flatten**
+   Setelah beberapa lapisan konvolusi dan pooling, kita perlu "rata" (flatten) hasil keluaran menjadi satu dimensi agar bisa diteruskan ke lapisan dense (fully connected). Lapisan **Flatten** ini mengubah output tiga dimensi (tinggi, lebar, dan saluran) menjadi satu dimensi vektor.
+
+3. **Lapisan Dense (Fully Connected Layers)**
+   - **Lapisan Dense 1**:  
+     Lapisan dense pertama memiliki 64 neuron dengan fungsi aktivasi **ReLU**. Lapisan ini bertugas untuk memproses informasi yang dihasilkan oleh lapisan konvolusi dan pooling, serta memetakan informasi tersebut ke ruang dimensi yang lebih rendah.
+     - **Jumlah neuron**: 64  
+     - **Fungsi aktivasi**: ReLU
+   
+   - **Lapisan Dense 2 (Output Layer)**:  
+     Lapisan terakhir adalah lapisan output yang terdiri dari 10 neuron, masing-masing mewakili salah satu kelas dari dataset CIFAR-10 (ada 10 kelas). Fungsi aktivasi yang digunakan adalah **softmax**, yang memberikan distribusi probabilitas untuk setiap kelas, sehingga kita bisa mengidentifikasi kelas gambar dengan probabilitas tertinggi.
+     - **Jumlah neuron**: 10 (satu untuk setiap kelas CIFAR-10)  
+     - **Fungsi aktivasi**: Softmax
+
+4. **Rangkuman Arsitektur Model**
+Berikut adalah rangkuman dari arsitektur CNN yang diimplementasikan kedalam bahasa program:
+
+Input Layer (32x32x3 gambar RGB)
+
+    |
+    V
+
+Conv2D (32 filter, 3x3 kernel, ReLU activation) -> MaxPooling2D (2x2 pool)
+
+    |
+    V
+
+Conv2D (64 filter, 3x3 kernel, ReLU activation) -> MaxPooling2D (2x2 pool)
+
+    |
+    V
+
+Conv2D (64 filter, 3x3 kernel, ReLU activation)
+
+    |
+    V
+
+Flatten (ubah output menjadi vektor satu dimensi)
+
+    |
+    V
+
+Dense (64 neuron, ReLU activation)
+
+    |
+    V
+
+Dense (10 neuron, Softmax activation) -> Output (kelas gambar 0-9)
+
+5. **Alasan Penggunaan Arsitektur Ini:**
+   - **Lapisan Konvolusi**: Menggunakan beberapa lapisan konvolusi untuk mengekstrak fitur pada berbagai tingkat. 
+   Lapisan-lapisan ini sangat baik untuk mengenali pola dalam gambar, mulai dari fitur rendah seperti tepi hingga 
+   fitur yang lebih kompleks.
+   - **Max Pooling**: Setelah setiap lapisan konvolusi, digunakan max pooling untuk mengurangi dimensi dan 
+   menjaga fitur yang paling penting, yang juga membantu mengurangi risiko overfitting dan mempercepat pelatihan.
+   - **Lapisan Dense**: Setelah fitur diekstraksi dengan lapisan konvolusi, 
+   lapisan dense digunakan untuk menggabungkan informasi dan menghasilkan output akhir dalam bentuk klasifikasi.
+
+Tentu! Di bawah ini adalah contoh kode program lengkap untuk membuat Convolutional Neural Network (CNN) 
+dalam pemrosesan citra menggunakan Python dengan bantuan pustaka `TensorFlow` dan `Keras`. 
+Dalam contoh ini, kita akan menggunakan dataset `CIFAR-10`, yang merupakan dataset yang sering digunakan untuk klasifikasi gambar.
+
+### Langkah-langkah:
+1. Memuat dan mempersiapkan dataset (CIFAR-10).
+2. Membangun arsitektur CNN.
+3. Melatih model menggunakan data pelatihan.
+4. Mengevaluasi model pada data pengujian.
+5. Menyimpan model.
+
+import tensorflow as tf
+from tensorflow.keras import layers, models
+import matplotlib.pyplot as plt
+import numpy as np
+
+# 1. Memuat dataset CIFAR-10
+# CIFAR-10 adalah dataset yang terdiri dari 60,000 gambar berwarna dalam 10 kelas.
+# Dataset ini sudah tersedia di Keras.
+(x_train, y_train), (x_test, y_test) = tf.keras.datasets.cifar10.load_data()
+
+# Normalisasi gambar untuk mempercepat konvergensi (bernilai antara 0 dan 1)
+x_train = x_train.astype('float32') / 255.0
+x_test = x_test.astype('float32') / 255.0
+
+# 2. Membangun Arsitektur CNN
+model = models.Sequential()
+
+# Lapisan Konvolusi pertama
+model.add(layers.Conv2D(32, (3, 3), activation='relu', input_shape=(32, 32, 3)))
+model.add(layers.MaxPooling2D((2, 2)))
+
+# Lapisan Konvolusi kedua
+model.add(layers.Conv2D(64, (3, 3), activation='relu'))
+model.add(layers.MaxPooling2D((2, 2)))
+
+# Lapisan Konvolusi ketiga
+model.add(layers.Conv2D(64, (3, 3), activation='relu'))
+
+# Lapisan Flatten
+model.add(layers.Flatten())
+
+# Lapisan Dense pertama
+model.add(layers.Dense(64, activation='relu'))
+
+# Lapisan output (jumlah kelas ada 10, jadi output neuron 10)
+model.add(layers.Dense(10, activation='softmax'))
+
+# 3. Menyusun Model
+model.compile(optimizer='adam',
+              loss='sparse_categorical_crossentropy',
+              metrics=['accuracy'])
+
+# 4. Melatih Model
+history = model.fit(x_train, y_train, epochs=10, validation_data=(x_test, y_test), batch_size=64)
+
+# 5. Evaluasi Model
+test_loss, test_acc = model.evaluate(x_test, y_test, verbose=2)
+print(f'\nTest accuracy: {test_acc}')
+
+# 6. Visualisasi Akurasi dan Loss selama pelatihan
+plt.figure(figsize=(12, 4))
+
+# Plot akurasi
+plt.subplot(1, 2, 1)
+plt.plot(history.history['accuracy'], label='Akurasi Training')
+plt.plot(history.history['val_accuracy'], label='Akurasi Validation')
+plt.title('Akurasi Model')
+plt.xlabel('Epoch')
+plt.ylabel('Akurasi')
+plt.legend()
+
+# Plot loss
+plt.subplot(1, 2, 2)
+plt.plot(history.history['loss'], label='Loss Training')
+plt.plot(history.history['val_loss'], label='Loss Validation')
+plt.title('Loss Model')
+plt.xlabel('Epoch')
+plt.ylabel('Loss')
+plt.legend()
+
+plt.show()
+
+# 7. Menyimpan Model
+model.save('cnn_cifar10_model.h5')
+
+
+### Penjelasan Kode:
+
+1. **Memuat dan menyiapkan dataset**:  
+   Kita menggunakan dataset CIFAR-10 yang sudah tersedia di Keras (`tf.keras.datasets.cifar10`). 
+   Dataset ini terdiri dari 60,000 gambar berwarna dengan ukuran 32x32 piksel yang terbagi dalam 10 kelas.
+
+2. **Arsitektur CNN**:
+   - Tiga lapisan konvolusi (`Conv2D`) digunakan untuk mengekstrak fitur dari gambar. 
+   Setiap lapisan konvolusi diikuti oleh lapisan pooling (`MaxPooling2D`) untuk mengurangi dimensi.
+   - Setelah lapisan konvolusi, kita menggunakan lapisan `Flatten` untuk mengubah data menjadi satu dimensi.
+   - Lapisan dense terakhir memiliki 10 unit untuk klasifikasi (karena ada 10 kelas).
+
+3. **Menyusun Model**:  
+   Model disusun menggunakan `adam` optimizer dan `sparse_categorical_crossentropy` sebagai loss function,
+   karena ini adalah masalah klasifikasi multi-kelas.
+
+4. **Melatih Model**:  
+   Model dilatih dengan 10 epoch dan menggunakan 64 gambar per batch. 
+   Kita juga menggunakan data validasi (test set) untuk memonitor akurasi selama pelatihan.
+
+5. **Evaluasi Model**:  
+   Setelah pelatihan selesai, model dievaluasi pada data uji, dan akurasi pada data pengujian dicetak.
+
+6. **Visualisasi Hasil Pelatihan**:  
+   Grafik akurasi dan loss selama pelatihan dan validasi ditampilkan untuk melihat perkembangan model.
+
+7. **Menyimpan Model**:  
+   Model yang telah dilatih disimpan dalam file `cnn_cifar10_model.h5` untuk penggunaan lebih lanjut.
+
+### Menggunakan Model:
+Setelah model dilatih dan disimpan, Anda dapat memuat model tersebut dan menggunakannya untuk membuat prediksi baru:
+
+python
+# Memuat model yang telah disimpan
+loaded_model = tf.keras.models.load_model('cnn_cifar10_model.h5')
+
+# Membuat prediksi untuk gambar baru
+predictions = loaded_model.predict(x_test[:5])
+
+# Menampilkan prediksi kelas untuk 5 gambar pertama
+for i in range(5):
+    print(f"Prediksi gambar {i+1}: {np.argmax(predictions[i])}")
